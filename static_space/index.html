@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>BabyVLM Leaderboard 2026</title>
+<style>
+  :root {
+    --bg: #ffffff; --fg: #1a1a2e; --muted: #6b7280; --line: #e5e7eb;
+    --head: #faf5ff; --accent: #7c3aed; --row: #ffffff; --row-alt: #faf7ff; --hl: #f3e8ff;
+    --chip: #ede9fe; --chip-fg: #5b21b6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f0f1a; --fg: #e6e6f0; --muted: #9aa0b0; --line: #2a2a3d;
+      --head: #1b1330; --accent: #a78bfa; --row: #14141f; --row-alt: #191926; --hl: #2a1f45;
+      --chip: #2a1f45; --chip-fg: #c4b5fd;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.5; }
+  .wrap { max-width: 1500px; margin: 0 auto; padding: 28px 20px 80px; }
+  header h1 { font-size: 1.9rem; margin: 0 0 6px; }
+  header h1 .baby { font-size: 1.9rem; }
+  .sub { color: var(--muted); margin: 0 0 18px; max-width: 900px; }
+  .meta { color: var(--muted); font-size: .85rem; margin-bottom: 14px; }
+  .tabs { display: flex; gap: 8px; margin: 18px 0 10px; flex-wrap: wrap; }
+  .tab { background: none; border: 1px solid var(--line); color: var(--fg); padding: 7px 16px;
+    border-radius: 999px; cursor: pointer; font-size: .9rem; }
+  .tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .card { border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+  .scroll { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: .87rem; }
+  th, td { padding: 9px 12px; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--line); }
+  th:first-child, td:first-child, th:nth-child(2), td:nth-child(2) { text-align: left; }
+  thead th { background: var(--head); position: sticky; top: 0; cursor: pointer; user-select: none;
+    font-weight: 600; color: var(--fg); }
+  thead th.overall { color: var(--accent); }
+  thead th:hover { background: var(--hl); }
+  tbody tr:nth-child(even) { background: var(--row-alt); }
+  tbody tr:nth-child(odd) { background: var(--row); }
+  tbody tr:hover { background: var(--hl); }
+  td.rank { color: var(--muted); font-variant-numeric: tabular-nums; }
+  td.overall { font-weight: 700; color: var(--accent); font-variant-numeric: tabular-nums; }
+  td.num { font-variant-numeric: tabular-nums; }
+  td.na { color: var(--muted); }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .empty { padding: 40px; text-align: center; color: var(--muted); }
+  .chip { display: inline-block; background: var(--chip); color: var(--chip-fg); border-radius: 6px;
+    padding: 1px 7px; font-size: .74rem; margin-left: 6px; }
+  section.info { margin-top: 34px; }
+  section.info h2 { font-size: 1.2rem; border-bottom: 1px solid var(--line); padding-bottom: 6px; }
+  code, pre { background: var(--head); border-radius: 6px; }
+  code { padding: 1px 5px; font-size: .85em; }
+  pre { padding: 12px 14px; overflow-x: auto; border: 1px solid var(--line); }
+  .foot { margin-top: 40px; color: var(--muted); font-size: .8rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1><span class="baby">👶🧠</span> BabyVLM Leaderboard 2026</h1>
+    <p class="sub">
+      Results on the <strong>DevCV Toolbox</strong> — the 11-benchmark evaluation suite from
+      <em>BabyVLM-V2: Toward Developmentally Grounded Pretraining and Benchmarking of Vision
+      Foundation Models</em>. Scores are accuracy (0–100); the <strong>Overall Average</strong>
+      is the mean of the 11 primary metrics (missing benchmarks count as 0). Evaluation is run by
+      the organizers on the held-out (IRB-restricted) SAYCam test sets.
+    </p>
+  </header>
+
+  <div class="meta" id="meta"></div>
+  <div class="card">
+    <div class="scroll">
+      <table id="lb">
+        <thead><tr id="head"></tr></thead>
+        <tbody id="body"></tbody>
+      </table>
+    </div>
+  </div>
+  <div class="empty" id="empty" style="display:none">No submissions have been published yet.</div>
+
+  <section class="info">
+    <h2>How to submit</h2>
+    <p>Because the test data is held out, you don't run the test set yourself. A submission is
+      <strong>two files: a <code>model.py</code> lmms-eval wrapper + a checkpoint.</strong>
+      Make them available (public repo) and send them to the organizers; we run the held-out
+      DevCV test set, review the results, and publish them here. See the
+      <a href="https://github.com/karthiksrikumar/BabyVLM-Leaderboard-2026" target="_blank">GitHub
+      repository</a> for the reference wrapper and full instructions.</p>
+  </section>
+
+  <section class="info">
+    <h2>Citation</h2>
+<pre>@misc{wang2026babyvlmv2developmentallygroundedpretraining,
+  title  = {BabyVLM-V2: Toward Developmentally Grounded Pretraining and Benchmarking of Vision Foundation Models},
+  author = {Shengao Wang and Wenqi Wang and Zecheng Wang and Max Whitton and others},
+  year   = {2026}, eprint = {2512.10932}, archivePrefix = {arXiv}, primaryClass = {cs.CV},
+  url    = {https://arxiv.org/abs/2512.10932}
+}</pre>
+  </section>
+
+  <div class="foot">Static leaderboard · reads <code>leaderboard.json</code> · updated on each approved submission.</div>
+</div>
+
+<script>
+const PRIMARY = [
+  "Overall Average", "Picture Vocabulary", "Looking While Listening", "Localization",
+  "Left/Right", "Spatial Details", "VDR (Binary)", "VDR (Open)", "Who Has More (Real)",
+  "Who Has More (Synth)", "Object Counting", "Memory"
+];
+let DATA = null, sortKey = "Overall Average", sortDir = -1;
+
+function fmt(v) {
+  if (v === null || v === undefined || (typeof v === "number" && isNaN(v))) return null;
+  return (typeof v === "number") ? v.toFixed(2) : v;
+}
+
+function render() {
+  const cols = (DATA && DATA.benchmarks && DATA.benchmarks.length) ? DATA.benchmarks : PRIMARY;
+  const head = document.getElementById("head");
+  head.innerHTML = "<th>#</th><th>Model</th>" +
+    cols.map(c => `<th class="${c === 'Overall Average' ? 'overall' : ''}" data-k="${c}">${c}</th>`).join("");
+  head.querySelectorAll("th[data-k]").forEach(th => th.onclick = () => {
+    const k = th.getAttribute("data-k");
+    if (sortKey === k) sortDir *= -1; else { sortKey = k; sortDir = -1; }
+    render();
+  });
+
+  const rows = (DATA && DATA.rows) ? DATA.rows.slice() : [];
+  document.getElementById("empty").style.display = rows.length ? "none" : "block";
+  document.getElementById("lb").style.display = rows.length ? "" : "none";
+
+  rows.sort((a, b) => {
+    let x = a[sortKey], y = b[sortKey];
+    const xn = (x === null || x === undefined || (typeof x === "number" && isNaN(x)));
+    const yn = (y === null || y === undefined || (typeof y === "number" && isNaN(y)));
+    if (xn && yn) return 0; if (xn) return 1; if (yn) return -1;
+    if (typeof x === "number" && typeof y === "number") return (x - y) * sortDir;
+    return String(x).localeCompare(String(y)) * sortDir;
+  });
+
+  const body = document.getElementById("body");
+  body.innerHTML = rows.map((r, i) => {
+    const model = r.repo
+      ? `<a href="https://huggingface.co/${r.repo}" target="_blank">${r.Model}</a>`
+      : (r.Model || "");
+    const chal = r.challenge ? `<span class="chip">challenge</span>` : "";
+    const cells = cols.map(c => {
+      const v = fmt(r[c]);
+      const cls = c === "Overall Average" ? "overall" : (v === null ? "na" : "num");
+      return `<td class="${cls}">${v === null ? "—" : v}</td>`;
+    }).join("");
+    return `<tr><td class="rank">${i + 1}</td><td>${model}${chal}</td>${cells}</tr>`;
+  }).join("");
+}
+
+fetch("leaderboard.json?cb=" + Date.now())
+  .then(r => r.ok ? r.json() : {rows: []})
+  .then(d => {
+    DATA = d;
+    if (d && d.updated)
+      document.getElementById("meta").textContent =
+        `Last updated: ${d.updated} · ${(d.rows || []).length} model(s)`;
+    render();
+  })
+  .catch(() => { DATA = {rows: []}; render(); });
+</script>
+</body>
+</html>

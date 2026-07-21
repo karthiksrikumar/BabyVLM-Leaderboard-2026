@@ -78,6 +78,14 @@ def approve_yes(submission_id: str) -> None:
     meta["status"] = "APPROVED"
     _save(stage_dir, "meta.json", meta)
 
+    # Regenerate + push the static leaderboard page so the new row shows immediately.
+    try:
+        from runner.publish_static import publish
+        publish(token=token)
+    except Exception as e:
+        print(f"[approve] warning: could not refresh static leaderboard ({e}). "
+              f"Run `python -m runner.publish_static` manually.")
+
     print(f"[approve] PUBLISHED '{request_obj.get('model')}' to {config.RESULTS_REPO}")
     send_email(
         subject=f"[BabyVLM] PUBLISHED to leaderboard: {request_obj.get('model')}",

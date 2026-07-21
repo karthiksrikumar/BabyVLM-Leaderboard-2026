@@ -68,18 +68,57 @@ def materialize_datasets(devcv_root: str) -> list[str]:
     return missing
 
 
+def _find_wrapper_class(src: str) -> str | None:
+    """Return the wrapper's class name: the class decorated @register_model, else the first class."""
+    import ast
+    try:
+        tree = ast.parse(src)
+    except Exception:
+        return None
+    first = None
+    for node in tree.body:
+        if isinstance(node, ast.ClassDef):
+            first = first or node.name
+            for dec in node.decorator_list:
+                fn = dec.func if isinstance(dec, ast.Call) else dec
+                if getattr(fn, "id", None) == "register_model" or getattr(fn, "attr", None) == "register_model":
+                    return node.name
+    return first
+
+
 def install_wrapper(devcv_root: str, wrapper_path: str, registered_model: str) -> None:
-    """Copy a submitted model.py into lmms_eval/models/ and register it in __init__.py."""
+    """Copy a submitted model.py into lmms_eval/models/<name>.py AND register it so
+    `--model <name>` resolves.
+
+    lmms-eval resolves a model via AVAILABLE_MODELS in lmms_eval/models/__init__.py
+    (get_model() raises if the name is absent), so copying the file is not enough — we
+    insert `"<name>": "<ClassName>"` into that dict. Idempotent; safe to call per submission
+    on our own DevCV-Toolbox checkout.
+    """
     models_dir = os.path.join(devcv_root, "lmms_eval", "models")
     dst = os.path.join(models_dir, f"{registered_model}.py")
     shutil.copyfile(wrapper_path, dst)
+
     init_path = os.path.join(models_dir, "__init__.py")
     with open(init_path) as f:
         init_src = f.read()
-    # Best-effort registration: add "<name>": "<ClassName>" to AVAILABLE_MODELS if absent.
-    if f'"{registered_model}"' not in init_src:
-        print(f"[warn] '{registered_model}' not found in {init_path}. "
-              f"Add it to AVAILABLE_MODELS manually if lmms-eval can't resolve it.")
+    if f'"{registered_model}"' in init_src:
+        print(f"[runner] '{registered_model}' already registered in lmms_eval/models/__init__.py")
+        return
+
+    class_name = _find_wrapper_class(open(wrapper_path).read())
+    if not class_name:
+        print(f"[warn] no class found in {wrapper_path}; could not auto-register '{registered_model}'.")
+        return
+
+    marker = "AVAILABLE_MODELS = {"
+    if marker not in init_src:
+        print(f"[warn] AVAILABLE_MODELS not found in {init_path}; register '{registered_model}' manually.")
+        return
+    new_src = init_src.replace(marker, f'{marker}\n    "{registered_model}": "{class_name}",', 1)
+    with open(init_path, "w") as f:
+        f.write(new_src)
+    print(f"[runner] registered '{registered_model}' -> {class_name} in lmms_eval/models/__init__.py")
 
 
 def collate_logs(logs_dir: str) -> dict:

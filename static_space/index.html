@@ -57,6 +57,16 @@
   code { padding: 1px 5px; font-size: .85em; }
   pre { padding: 12px 14px; overflow-x: auto; border: 1px solid var(--line); }
   .foot { margin-top: 40px; color: var(--muted); font-size: .8rem; }
+  .form { display: flex; flex-direction: column; gap: 12px; max-width: 760px; margin-top: 14px; }
+  .form label { display: flex; flex-direction: column; gap: 4px; font-size: .9rem; font-weight: 600; }
+  .form input, .form textarea { font: inherit; font-weight: 400; padding: 8px 10px; border: 1px solid var(--line);
+    border-radius: 8px; background: var(--bg); color: var(--fg); width: 100%; }
+  .form textarea { resize: vertical; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .82rem; }
+  .form input:focus, .form textarea:focus { outline: 2px solid var(--accent); border-color: var(--accent); }
+  .submit-btn { align-self: flex-start; background: var(--accent); color: #fff; border: none; border-radius: 999px;
+    padding: 11px 26px; font-size: .95rem; font-weight: 600; cursor: pointer; }
+  .submit-btn:hover { filter: brightness(1.08); }
+  .hint { color: var(--muted); font-size: .8rem; margin: 2px 0 0; }
 </style>
 </head>
 <body>
@@ -83,14 +93,32 @@
   </div>
   <div class="empty" id="empty" style="display:none">No submissions have been published yet.</div>
 
-  <section class="info">
-    <h2>How to submit</h2>
+  <section class="info" id="submit">
+    <h2>🍼 Submit a model</h2>
     <p>Because the test data is held out, you don't run the test set yourself. A submission is
-      <strong>two files: a <code>model.py</code> lmms-eval wrapper + a checkpoint.</strong>
-      Make them available (public repo) and send them to the organizers; we run the held-out
-      DevCV test set, review the results, and publish them here. See the
-      <a href="https://github.com/karthiksrikumar/BabyVLM-Leaderboard-2026" target="_blank">GitHub
-      repository</a> for the reference wrapper and full instructions.</p>
+      <strong>two things: a <code>model.py</code> lmms-eval wrapper + a checkpoint.</strong>
+      Fill in this form and click <em>Submit</em> — it opens a pre-filled submission on our GitHub,
+      where your entry is recorded. The organizers then run the held-out DevCV test set on an
+      <strong>L40S GPU</strong> and, once approved, your row appears above.</p>
+
+    <div class="form">
+      <label>⚠️ Model name (unique)<input id="f_name" placeholder="babyllava-vit-tinyllama" /></label>
+      <label>⚠️ Checkpoint (HuggingFace repo id, or a public download URL)<input id="f_ckpt" placeholder="your-hf-user/your-checkpoint" /></label>
+      <label>🔹 Registered wrapper name (the <code>@register_model</code> name in your model.py)<input id="f_reg" placeholder="babyllava" /></label>
+      <label>🔹 Conversation template<input id="f_conv" value="baby_v1" /></label>
+      <label>🔹 <strong>(Optional)</strong> Link your HuggingFace model<input id="f_hf" placeholder="https://huggingface.co/your-user/your-model" /></label>
+      <label>👶 Vision encoder<input id="f_vision" placeholder="ViT-L/16 (SAYCam-pretrained)" /></label>
+      <label>👶 Language model / backbone<input id="f_lm" placeholder="TinyLlama" /></label>
+      <label>👶 Training data<input id="f_data" placeholder="SAYCam" /></label>
+      <label>👶 Total number of parameters<input id="f_params" placeholder="1100000000" /></label>
+      <label>👶 Brief description<textarea id="f_desc" rows="3" placeholder="A developmentally grounded VLM ..."></textarea></label>
+      <label>⚠️ Your <code>model.py</code> wrapper (paste it, or leave a link)<textarea id="f_modelpy" rows="6" placeholder="Paste your lmms-eval wrapper here (subclass of lmms_eval.api.model.lmms, @register_model). Long files can be pasted into the GitHub issue that opens."></textarea></label>
+      <button id="submitBtn" class="submit-btn">Submit on GitHub →</button>
+      <p class="hint">⚠️ = required · 👶 = required for the challenge · 🔹 = optional. Submitting opens a
+        pre-filled GitHub issue for you to review and post. See the
+        <a href="https://github.com/karthiksrikumar/BabyVLM-Leaderboard-2026/blob/main/submissions/README.md" target="_blank">submission guide</a>
+        for the PR alternative and the reference <code>model.py</code>.</p>
+    </div>
   </section>
 
   <section class="info">
@@ -157,6 +185,35 @@ function render() {
     return `<tr><td class="rank">${i + 1}</td><td>${model}${chal}</td>${cells}</tr>`;
   }).join("");
 }
+
+// --- Submission form: build a pre-filled GitHub issue and hand off ---
+const GH_REPO = "karthiksrikumar/BabyVLM-Leaderboard-2026";
+function submitToGitHub() {
+  const g = id => (document.getElementById(id).value || "").trim();
+  const name = g("f_name"), ckpt = g("f_ckpt");
+  if (!name || !ckpt) { alert("Model name and checkpoint are required."); return; }
+  // Prefill the issue form by field id (GitHub issue-form query params).
+  const params = new URLSearchParams({
+    template: "model-submission.yml",
+    title: `[Submission] ${name}`,
+    model_name: name,
+    checkpoint: ckpt,
+    registered_model: g("f_reg"),
+    conv_template: g("f_conv"),
+    hf_model_url: g("f_hf"),
+    vision_encoder: g("f_vision"),
+    language_model: g("f_lm"),
+    training_data: g("f_data"),
+    num_parameters: g("f_params"),
+    description: g("f_desc"),
+  });
+  const py = g("f_modelpy");
+  // Only prefill model.py if short enough for a URL; otherwise the user pastes it in the issue.
+  if (py && py.length < 5000) params.set("model_py", py);
+  const url = `https://github.com/${GH_REPO}/issues/new?` + params.toString();
+  window.open(url, "_blank");
+}
+document.getElementById("submitBtn").addEventListener("click", submitToGitHub);
 
 fetch("leaderboard.json?cb=" + Date.now())
   .then(r => r.ok ? r.json() : {rows: []})

@@ -10,6 +10,7 @@ import os
 
 # --- People notified when an evaluation starts and finishes ---
 RECIPIENTS = [
+    "babyvlm-challenge@googlegroups.com",
     "karthiksrikumar83@gmail.com",
     "ac25@bu.edu",
     "maxwh@bu.edu",
@@ -18,6 +19,12 @@ RECIPIENTS = [
 
 # From address for notification emails (override with BABYVLM_EMAIL_FROM).
 EMAIL_FROM = os.environ.get("BABYVLM_EMAIL_FROM", "babyvlm-leaderboard@scc.bu.edu")
+
+# --- GPU the evaluation requests on the SCC scheduler ---
+# Submissions run on an L40S. The qsub batch script (runner/submit_l40s.qsub) requests
+# this GPU type; kept here so it's configurable in one place.
+GPU_TYPE = os.environ.get("BABYVLM_GPU_TYPE", "L40S")
+CONDA_ENV = os.environ.get("BABYVLM_CONDA_ENV", "/projectnb/ivc-ml/wsashawn/miniconda3/envs/llava2")
 
 # HuggingFace org/user that owns the leaderboard + its datasets.
 OWNER = os.environ.get("BABYVLM_OWNER", "karthiksrikumar")

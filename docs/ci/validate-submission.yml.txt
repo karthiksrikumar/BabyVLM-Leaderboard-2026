@@ -1,0 +1,44 @@
+name: Validate submission
+
+on:
+  pull_request:
+    paths:
+      - "submissions/**"
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate submission.json files
+        run: |
+          python3 - <<'PY'
+          import glob, json, sys
+          REQUIRED = ["model_name", "checkpoint"]
+          problems = []
+          subs = [p for p in glob.glob("submissions/*/submission.json") if "/EXAMPLE/" not in p]
+          if not subs:
+              print("No new submission.json found (nothing to validate).")
+              sys.exit(0)
+          for p in subs:
+              try:
+                  d = json.load(open(p))
+              except Exception as e:
+                  problems.append(f"{p}: not valid JSON ({e})"); continue
+              for k in REQUIRED:
+                  if not d.get(k):
+                      problems.append(f"{p}: missing required field '{k}'")
+              if "REPLACE" in str(d.get("checkpoint", "")):
+                  problems.append(f"{p}: checkpoint still has the placeholder value")
+              folder = p.rsplit('/', 1)[0]
+              import os
+              if not (d.get("registered_model") or os.path.isfile(f"{folder}/model.py")):
+                  problems.append(f"{p}: provide a model.py in the folder or set 'registered_model'")
+              print(f"checked {p}: model_name={d.get('model_name')!r} checkpoint={d.get('checkpoint')!r}")
+          if problems:
+              print("\nVALIDATION FAILED:")
+              for pr in problems:
+                  print(" -", pr)
+              sys.exit(1)
+          print("\nAll submissions valid ✅  An organizer will run the L40S evaluation.")
+          PY

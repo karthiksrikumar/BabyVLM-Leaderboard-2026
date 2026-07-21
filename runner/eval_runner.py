@@ -267,10 +267,39 @@ def run(args) -> str:
     return submission_id
 
 
+def _load_submission_dir(args):
+    """Populate args from a submissions/<name>/ folder (submission.json + model.py).
+
+    Writes the metadata block to a temp file under PENDING_DIR (ivc-ml, not home) and points
+    args.metadata at it. Returns that temp path so the caller can delete it afterwards.
+    """
+    sub_dir = args.submission
+    with open(os.path.join(sub_dir, "submission.json")) as f:
+        sub = json.load(f)
+    args.model_name = args.model_name or sub.get("model_name")
+    args.checkpoint = args.checkpoint or sub.get("checkpoint")
+    args.registered_model = args.registered_model or sub.get("registered_model")
+    args.conv_template = sub.get("conv_template", args.conv_template)
+    # a model.py in the submission folder (skip the EXAMPLE placeholder)
+    cand = os.path.join(sub_dir, "model.py")
+    if not args.wrapper and os.path.isfile(cand) and "EXAMPLE" not in os.path.basename(os.path.dirname(cand)):
+        args.wrapper = cand
+    meta = dict(sub.get("metadata", {}))
+    if sub.get("hf_model_url"):
+        meta.setdefault("hf_repo", sub["hf_model_url"])
+    os.makedirs(config.PENDING_DIR, exist_ok=True)
+    meta_path = os.path.join(config.PENDING_DIR, f".meta_{_now_id(args.model_name or 'sub')}.json")
+    with open(meta_path, "w") as f:
+        json.dump(meta, f)
+    args.metadata = meta_path
+    return meta_path
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--model_name", required=True, help="Unique leaderboard name for this submission")
-    ap.add_argument("--checkpoint", required=True, help="Path (or HF repo) to the participant's checkpoint")
+    ap.add_argument("--submission", default=None, help="Path to a submissions/<name>/ folder (reads submission.json + model.py)")
+    ap.add_argument("--model_name", default=None, help="Unique leaderboard name (or taken from --submission)")
+    ap.add_argument("--checkpoint", default=None, help="Path/HF repo to the checkpoint (or taken from --submission)")
     ap.add_argument("--registered_model", default=None, help="Wrapper name already registered in lmms_eval/models")
     ap.add_argument("--wrapper", default=None, help="Path to a submitted model.py to install + register")
     ap.add_argument("--conv_template", default="baby_v1")
@@ -285,7 +314,21 @@ def main():
 
     # make repo root importable (for `import src.about`)
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    run(args)
+
+    meta_tmp = None
+    if args.submission:
+        meta_tmp = _load_submission_dir(args)
+    if not args.model_name or not args.checkpoint:
+        sys.exit("Provide --model_name and --checkpoint (directly or via --submission).")
+    try:
+        run(args)
+    finally:
+        if meta_tmp and os.path.exists(meta_tmp):
+            os.remove(meta_tmp)  # temp metadata file lives under ivc-ml; remove it
+
+
+if __name__ == "__main__":
+    main()
 
 
 if __name__ == "__main__":

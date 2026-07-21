@@ -1,0 +1,16 @@
+{
+  "model_name": "EXAMPLE-babyllava-vit-tinyllama",
+  "checkpoint": "REPLACE-with-your-hf-repo-id-or-public-url",
+  "registered_model": "babyllava",
+  "conv_template": "baby_v1",
+  "hf_model_url": "",
+  "metadata": {
+    "model_type": "LLaVA-style",
+    "vision_encoder": "ViT-L/16 (SAYCam-pretrained)",
+    "language_model": "TinyLlama",
+    "training_data": "SAYCam",
+    "num_parameters": 1100000000,
+    "main_contributions": "Developmentally grounded pretraining",
+    "model_description": "Example submission. Copy this folder to submissions/<your-model>/, edit these fields, and add your model.py."
+  }
+}

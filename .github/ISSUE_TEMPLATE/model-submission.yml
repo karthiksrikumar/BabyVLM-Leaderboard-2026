@@ -1,0 +1,99 @@
+name: "🍼 BabyVLM Model Submission"
+description: "Submit a model for evaluation on the DevCV Toolbox (11 benchmarks). The organizers run the held-out test set on an L40S GPU and publish approved results."
+title: "[Submission] <your model name>"
+labels: ["submission"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Submit your model for evaluation
+        A submission is **two things: a `model.py` wrapper + a checkpoint.** You never see the
+        held-out test data — we run it for you on an **L40S GPU** and publish approved scores.
+
+        You can submit here (issue form) **or** open a Pull Request adding
+        `submissions/<your-model>/` (see [`submissions/README.md`](../blob/main/submissions/README.md)).
+  - type: input
+    id: model_name
+    attributes:
+      label: "⚠️ Model name (unique — identifies your leaderboard row)"
+      placeholder: "babyllava-vit-tinyllama"
+    validations:
+      required: true
+  - type: input
+    id: checkpoint
+    attributes:
+      label: "⚠️ Checkpoint (HuggingFace repo id, or a public URL we can download)"
+      placeholder: "your-hf-user/your-checkpoint"
+    validations:
+      required: true
+  - type: textarea
+    id: model_py
+    attributes:
+      label: "⚠️ Your model.py wrapper"
+      description: "Paste your lmms-eval wrapper (subclass of lmms_eval.api.model.lmms, @register_model). Or, if it already lives in your checkpoint repo / a public repo, give the link instead."
+      render: python
+    validations:
+      required: true
+  - type: input
+    id: registered_model
+    attributes:
+      label: "🔹 Registered wrapper name (the @register_model name in your model.py)"
+      placeholder: "babyllava"
+    validations:
+      required: false
+  - type: input
+    id: conv_template
+    attributes:
+      label: "🔹 Conversation template"
+      placeholder: "baby_v1"
+    validations:
+      required: false
+  - type: input
+    id: hf_model_url
+    attributes:
+      label: "🔹 (Optional) Link your HuggingFace model"
+      description: "Optional — like the BabyLM leaderboard, you can link your model page so your leaderboard row links back to it."
+      placeholder: "https://huggingface.co/your-hf-user/your-model"
+    validations:
+      required: false
+  - type: dropdown
+    id: model_type
+    attributes:
+      label: "👶 Model type"
+      options:
+        - "LLaVA-style"
+        - "Encoder-decoder"
+        - "Dual-encoder (CLIP-style)"
+        - "Other"
+    validations:
+      required: false
+  - type: input
+    id: vision_encoder
+    attributes:
+      label: "👶 Vision encoder"
+      placeholder: "ViT-L/16 (SAYCam-pretrained)"
+  - type: input
+    id: language_model
+    attributes:
+      label: "👶 Language model / backbone"
+      placeholder: "TinyLlama"
+  - type: input
+    id: training_data
+    attributes:
+      label: "👶 Training data"
+      placeholder: "SAYCam"
+  - type: input
+    id: num_parameters
+    attributes:
+      label: "👶 Total number of parameters"
+      placeholder: "1100000000"
+  - type: textarea
+    id: description
+    attributes:
+      label: "👶 Brief description of the model"
+  - type: markdown
+    attributes:
+      value: |
+        ⚠️ = required · 👶 = required to count toward the BabyVLM challenge · 🔹 = optional.
+        After you submit, an organizer runs the evaluation on an L40S and, once approved, your row
+        appears on the [leaderboard](https://huggingface.co/spaces/karthiksrikumar/BabyVLM-Leaderboard-2026).

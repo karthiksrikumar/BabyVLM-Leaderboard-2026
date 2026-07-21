@@ -31,15 +31,18 @@ infrastructure and, after review, publish the scores.
      + `loglikelihood`). Reference: [`submission_template/model.py`](submission_template/model.py)
      (the `babyllava` wrapper).
    - a checkpoint.
-2. **Participant** makes those available (public repo) and **registers the model** in the Space's
-   **Submit** tab (a pointer + metadata → a PENDING request; no test data is exposed).
-3. **Organizer** runs the held-out test set with the runner:
+2. **Participant** submits via the **form on the leaderboard Space** (the *Submit a model* section),
+   which opens a **pre-filled GitHub issue**, or by opening a **PR** adding `submissions/<name>/`
+   (`submission.json` + `model.py`). Linking a HuggingFace model page is **optional**. All submitting
+   happens on GitHub; see [`submissions/README.md`](submissions/README.md).
+3. **Organizer** runs the held-out test set on an **L40S GPU** (SCC batch job):
    ```bash
-   python -m runner.eval_runner --model_name <name> --checkpoint <repo_or_path> \
-       --registered_model <wrapper> --devcv_root $BABYVLM_DEVCV_ROOT --metadata meta.json
+   qsub runner/submit_l40s.qsub --submission submissions/<name>
+   # or directly:
+   qsub runner/submit_l40s.qsub --model_name <name> --checkpoint <repo_or_path> --registered_model <wrapper>
    ```
-   This emails the organizers when the eval **starts** and again when it **finishes** with the
-   full score table, and stages the result for approval.
+   The runner emails the organizers (incl. `babyvlm-challenge@googlegroups.com`) when the eval
+   **starts** and again when it **finishes** with the full score table, and stages the result.
 4. **Organizer** approves or rejects:
    ```bash
    python -m runner.approve yes <submission_id>   # publish to the leaderboard

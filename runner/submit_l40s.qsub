@@ -1,0 +1,49 @@
+#!/bin/bash -l
+# ============================================================================
+# BabyVLM organizer evaluation — SCC batch job on an L40S GPU.
+#
+# Runs the held-out DevCV test set on a submitted model and stages the result
+# for yes/no approval. Submit with:
+#
+#   qsub -N babyvlm_eval \
+#        runner/submit_l40s.qsub \
+#        --submission submissions/<name>            # a GitHub PR submission folder
+#   # or, directly:
+#   qsub runner/submit_l40s.qsub \
+#        --model_name NAME --checkpoint REPO_OR_PATH --registered_model babyllava
+#
+# Everything after the script name is forwarded to runner.eval_runner.
+# ============================================================================
+#$ -P ivc-ml                      # project
+#$ -l gpus=1                      # 1 GPU
+#$ -l gpu_type=L40S               # ...specifically an L40S
+#$ -l gpu_c=7.0                   # min compute capability
+#$ -l h_rt=12:00:00               # wall-clock limit
+#$ -j y                           # join stderr/stdout
+#$ -o babyvlm_eval.$JOB_ID.log    # log file (cwd)
+
+set -euo pipefail
+
+# --- locate the leaderboard repo (this script lives in <repo>/runner/) ---
+REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$REPO_ROOT"
+
+# --- environment: conda env with torch + llava + huggingface_hub ---
+CONDA_ENV="${BABYVLM_CONDA_ENV:-/projectnb/ivc-ml/wsashawn/miniconda3/envs/llava2}"
+export PATH="$CONDA_ENV/bin:$PATH"
+
+# --- DevCV-Toolbox checkout the runner drives ---
+export BABYVLM_DEVCV_ROOT="${BABYVLM_DEVCV_ROOT:-$REPO_ROOT/../DevCV-Toolbox}"
+
+# --- HF write token (for the later `yes` publish); read from the private secrets dir ---
+if [ -z "${HF_TOKEN:-}" ] && [ -f /projectnb/ivc-ml/srikumar/.secrets/.babyvlm_hf_token ]; then
+  export HF_TOKEN="$(cat /projectnb/ivc-ml/srikumar/.secrets/.babyvlm_hf_token)"
+fi
+
+# keep HF caches off home
+export HF_HOME="${HF_HOME:-/projectnb/ivc-ml/.conda/huggingface}"
+
+echo "[qsub] host=$(hostname) gpu=$(nvidia-smi --query-gpu=name --format=csv,noheader 2>/dev/null | head -1)"
+echo "[qsub] python=$(which python)  devcv=$BABYVLM_DEVCV_ROOT"
+
+python -m runner.eval_runner "$@"

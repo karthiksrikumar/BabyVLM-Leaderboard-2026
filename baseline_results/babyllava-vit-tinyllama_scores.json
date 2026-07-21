@@ -1,0 +1,43 @@
+{
+  "results": {
+    "baby_pv": {
+      "acc": 0.4213
+    },
+    "baby_winoground": {
+      "group_score": 0.1124,
+      "image_score": 0.284,
+      "text_score": 0.201
+    },
+    "baby_localize": {
+      "acc": 0.5087
+    },
+    "baby_leftright": {
+      "acc": 0.9991
+    },
+    "baby_spatialdetails": {
+      "acc": 0.362
+    },
+    "baby_vdr_binary": {
+      "acc_exact": 0.6215,
+      "acc_adjacent": 0.7104
+    },
+    "baby_vdr_open": {
+      "acc_exact": 0.2989,
+      "acc_adjacent": 0.5462
+    },
+    "baby_compare_real": {
+      "acc": 0.9969
+    },
+    "baby_compare_synthetic": {
+      "acc": 0.6031
+    },
+    "baby_count": {
+      "acc": 0.1599
+    },
+    "baby_memory": {
+      "acc_learning": 0.912,
+      "acc_testing_raw": 0.503,
+      "acc_testing_adjusted": 0.407
+    }
+  }
+}

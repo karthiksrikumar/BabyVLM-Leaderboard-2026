@@ -1,0 +1,10 @@
+datasets
+gradio
+gradio[oauth]
+gradio_leaderboard==0.0.13
+gradio_client
+huggingface-hub>=0.18.0
+numpy
+pandas
+python-dateutil
+tqdm

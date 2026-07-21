@@ -178,20 +178,27 @@ def run(args) -> str:
     ]
     if args.limit:
         cmd += ["--limit", str(args.limit)]
-    print("[runner] $", " ".join(cmd))
-    if not args.dry_run_eval:
-        env = dict(os.environ)
-        proc = subprocess.run(cmd, cwd=devcv_root, env=env)
-        if proc.returncode != 0:
-            send_email(
-                subject=f"[BabyVLM] Evaluation FAILED: {args.model_name}",
-                body_text=f"lmms-eval exited with code {proc.returncode} for submission {submission_id}.\n"
-                          f"Check logs at {logs_dir} on {os.uname().nodename}.",
-            )
-            sys.exit(f"lmms-eval failed (exit {proc.returncode})")
-
-    # --- (5) collate ---
-    scores = collate_logs(logs_dir)
+    # If precomputed scores are supplied, skip lmms-eval entirely (e.g. the eval was
+    # run on another machine). Otherwise run the harness.
+    if getattr(args, "scores_json", None):
+        with open(args.scores_json) as f:
+            _sj = json.load(f)
+        scores = _sj.get("results", _sj)
+        print(f"[runner] using precomputed scores from {args.scores_json} (skipping lmms-eval)")
+    else:
+        print("[runner] $", " ".join(cmd))
+        if not args.dry_run_eval:
+            env = dict(os.environ)
+            proc = subprocess.run(cmd, cwd=devcv_root, env=env)
+            if proc.returncode != 0:
+                send_email(
+                    subject=f"[BabyVLM] Evaluation FAILED: {args.model_name}",
+                    body_text=f"lmms-eval exited with code {proc.returncode} for submission {submission_id}.\n"
+                              f"Check logs at {logs_dir} on {os.uname().nodename}.",
+                )
+                sys.exit(f"lmms-eval failed (exit {proc.returncode})")
+        # --- (5) collate ---
+        scores = collate_logs(logs_dir)
 
     # --- (6) stage result + request + yes/no scripts ---
     results_obj = {
@@ -271,6 +278,7 @@ def main():
     ap.add_argument("--tasks", default=None, help="Comma-separated task subset (default: all 11)")
     ap.add_argument("--batch_size", type=int, default=16)
     ap.add_argument("--limit", type=int, default=None, help="Limit examples per task (smoke test)")
+    ap.add_argument("--scores_json", default=None, help="Use precomputed scores (from another machine); skip lmms-eval")
     ap.add_argument("--dry_run_eval", action="store_true", help="Skip the lmms-eval call (test staging/email/approve only)")
     args = ap.parse_args()
 

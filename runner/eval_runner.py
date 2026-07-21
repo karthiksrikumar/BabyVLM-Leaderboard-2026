@@ -27,6 +27,7 @@ Example
         --devcv_root /path/to/DevCV-Toolbox \
         --metadata submission_meta.json
 """
+from __future__ import annotations
 import argparse
 import datetime
 import glob

@@ -10,6 +10,7 @@ Called automatically by ``runner/approve.py yes``; can also be run standalone:
 
     python -m runner.publish_static
 """
+from __future__ import annotations
 import datetime
 import json
 import os

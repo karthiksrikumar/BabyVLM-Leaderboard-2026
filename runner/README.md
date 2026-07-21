@@ -79,6 +79,20 @@ pending/<submission_id>/no      # reject
 on its next refresh. `no` marks the submission rejected and pushes nothing. Both send a
 final confirmation email.
 
+## Disk cleanup (automatic)
+
+To keep the organizer's home quota small, staged files are cleaned up automatically:
+
+- **`yes`** — once the result is safely on the Hub, the whole `pending/<id>/` bundle
+  (including the bulky lmms-eval `logs/`) is **deleted**. A one-line audit record is appended
+  to `pending/published_log.jsonl` so there's a lasting record of what was published.
+- **`no`** — the heavy `logs/` are removed but the small JSON records are kept so the
+  submission can be re-reviewed.
+- Set **`BABYVLM_KEEP_STAGED=1`** to disable all cleanup and keep the full staged directory.
+
+Checkpoints are never copied locally (the runner references them by path / HF repo), so they
+don't count against the quota.
+
 ## Emails
 
 By default emails go out through the local `sendmail` MTA (works on SCC `@bu.edu` hosts).

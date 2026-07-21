@@ -5,6 +5,7 @@ so participants never see it. This file centralises everything the runner needs:
 who gets notified, which repos results are pushed to, and where the held-out
 test sets live.
 """
+from __future__ import annotations
 import os
 
 # --- People notified when an evaluation starts and finishes ---

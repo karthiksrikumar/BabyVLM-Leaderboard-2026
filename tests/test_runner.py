@@ -103,9 +103,17 @@ def test_run_stage_and_approve():
 
         approve.HfApi = FakeApi
         os.environ["HF_TOKEN"] = "fake"
+        # stub the static publish (no network in tests)
+        import runner.publish_static as ps
+        ps.publish = lambda token=None: None
         approve.approve_yes(sid)
-        assert json.load(open(os.path.join(stage, "meta.json")))["status"] == "APPROVED"
         assert len(uploads) == 2  # results + request
+        # staged bundle is deleted after publish; a small audit record remains
+        assert not os.path.isdir(stage), "staged dir should be cleaned up after publish"
+        log = os.path.join(config.PENDING_DIR, "published_log.jsonl")
+        assert os.path.exists(log)
+        rec = json.loads(open(log).read().strip().splitlines()[-1])
+        assert rec["submission_id"] == sid and rec["results"]
 
 
 if __name__ == "__main__":

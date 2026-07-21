@@ -12,9 +12,12 @@ Usage:
 Requires an ``HF_TOKEN`` (write access to the leaderboard org) for ``yes``.
 The per-submission ``pending/<id>/yes`` and ``pending/<id>/no`` scripts call this.
 """
+from __future__ import annotations
 import argparse
+import datetime
 import json
 import os
+import shutil
 import sys
 
 from huggingface_hub import HfApi
@@ -26,6 +29,44 @@ from runner.emailer import send_email
 def _load(stage_dir, name):
     with open(os.path.join(stage_dir, name)) as f:
         return json.load(f)
+
+
+def _dir_size_mb(path):
+    total = 0
+    for root, _, files in os.walk(path):
+        for f in files:
+            try:
+                total += os.path.getsize(os.path.join(root, f))
+            except OSError:
+                pass
+    return total / 1e6
+
+
+def _cleanup_staged(stage_dir, submission_id, request_obj, results_obj):
+    """Delete the local staged bundle after publishing, to save disk in the org's quota.
+
+    A one-line audit record (no bulky logs) is appended to PENDING_DIR/published_log.jsonl
+    so there's a lasting record of what went to the leaderboard. Set BABYVLM_KEEP_STAGED=1
+    to keep the full staged directory instead.
+    """
+    if os.environ.get("BABYVLM_KEEP_STAGED") == "1":
+        print(f"[approve] BABYVLM_KEEP_STAGED=1 — leaving staged files at {stage_dir}")
+        return
+    freed = _dir_size_mb(stage_dir)
+    os.makedirs(config.PENDING_DIR, exist_ok=True)
+    record = {
+        "submission_id": submission_id,
+        "model": request_obj.get("model"),
+        "hf_repo": request_obj.get("hf_repo"),
+        "submitted_time": request_obj.get("submitted_time"),
+        "published_time": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "results": results_obj.get("results", {}),
+    }
+    with open(os.path.join(config.PENDING_DIR, "published_log.jsonl"), "a") as f:
+        f.write(json.dumps(record) + "\n")
+    shutil.rmtree(stage_dir, ignore_errors=True)
+    print(f"[approve] cleaned up staged files ({freed:.1f} MB freed). Audit record kept in "
+          f"{os.path.join(config.PENDING_DIR, 'published_log.jsonl')}.")
 
 
 def _save(stage_dir, name, obj):
@@ -98,6 +139,9 @@ def approve_yes(submission_id: str) -> None:
         ),
     )
 
+    # Free local disk now that everything is safely on the Hub.
+    _cleanup_staged(stage_dir, submission_id, request_obj, results_obj)
+
 
 def approve_no(submission_id: str, reason: str = "") -> None:
     stage_dir = os.path.join(config.PENDING_DIR, submission_id)
@@ -109,6 +153,12 @@ def approve_no(submission_id: str, reason: str = "") -> None:
         meta["reject_reason"] = reason
     _save(stage_dir, "meta.json", meta)
     request_obj = _load(stage_dir, "request.json")
+    # Trim the heavy lmms-eval logs but keep the small records so the submission can be re-reviewed.
+    logs_dir = os.path.join(stage_dir, "logs")
+    if os.path.isdir(logs_dir) and os.environ.get("BABYVLM_KEEP_STAGED") != "1":
+        freed = _dir_size_mb(logs_dir)
+        shutil.rmtree(logs_dir, ignore_errors=True)
+        print(f"[approve] removed rejected submission's logs ({freed:.1f} MB freed); kept JSON records.")
     print(f"[approve] REJECTED '{request_obj.get('model')}' (submission {submission_id}). Nothing published.")
     send_email(
         subject=f"[BabyVLM] REJECTED (not published): {request_obj.get('model')}",

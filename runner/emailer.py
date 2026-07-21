@@ -10,6 +10,7 @@ Three delivery backends, chosen automatically:
 3. **sendmail** — otherwise pipe the message to the local MTA
    (``/usr/sbin/sendmail``). This works out of the box on BU's SCC.
 """
+from __future__ import annotations
 import os
 import smtplib
 import subprocess

@@ -40,7 +40,8 @@ def build_leaderboard_json(results_dir: str, requests_dir: str) -> dict:
     raw = get_raw_eval_results(results_dir, requests_dir)
     rows = []
     for ev in raw:
-        row = {"Model": ev.full_model, "repo": (ev.repo_id if ev.repo_id and ev.repo_id != "Unknown" else "")}
+        row = {"Model": ev.full_model, "Submitter": getattr(ev, "submitter", "") or "",
+               "repo": (ev.repo_id if ev.repo_id and ev.repo_id != "Unknown" else "")}
         # per-benchmark cells
         primary_vals = []
         for t in Tasks:

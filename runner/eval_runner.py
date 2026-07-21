@@ -170,6 +170,9 @@ def run(args) -> str:
         with open(args.metadata) as f:
             metadata = json.load(f)
 
+    # Submitter is part of the row identity so two people can reuse a model name safely.
+    submitter = (metadata.get("submitter") or getattr(args, "submitter", "") or "").strip()
+
     submission_id = _now_id(args.model_name)
     stage_dir = os.path.join(config.PENDING_DIR, submission_id)
     os.makedirs(stage_dir, exist_ok=True)
@@ -198,10 +201,14 @@ def run(args) -> str:
         print(f"[warn] missing test data for: {missing}")
 
     # --- (3) install wrapper (optional) ---
+    # If the participant supplied a model.py, copy it in under a name UNIQUE to this
+    # (submitter, model) so two people's wrappers never overwrite each other in the toolbox.
     registered_model = args.registered_model
     if args.wrapper:
-        registered_model = registered_model or os.path.splitext(os.path.basename(args.wrapper))[0]
-        install_wrapper(devcv_root, args.wrapper, registered_model)
+        internal = "sub_" + "".join(c if (c.isalnum() or c == "_") else "_"
+                                    for c in f"{submitter}_{args.model_name}".strip("_")).lower()
+        install_wrapper(devcv_root, args.wrapper, internal)
+        registered_model = internal
     if not registered_model:
         sys.exit("Provide --registered_model (name already in lmms_eval/models) or --wrapper (path to model.py).")
 
@@ -246,12 +253,14 @@ def run(args) -> str:
         "config": {
             "model_name": args.model_name,
             "model_sha": metadata.get("revision", "main"),
+            "submitter": submitter,  # part of the leaderboard row identity
             **{k: v for k, v in metadata.items() if k != "revision"},
         },
         "results": scores,
     }
     submitted_time = _iso_now()
-    user_name = (metadata.get("hf_repo", "Unknown").split("/")[0]) if metadata.get("hf_repo") else "Unknown"
+    # Group result/request files by submitter so different people never share a folder.
+    user_name = submitter or (metadata.get("hf_repo", "Unknown").split("/")[0] if metadata.get("hf_repo") else "Unknown")
     request_obj = {
         "model": args.model_name,
         "hf_repo": metadata.get("hf_repo", "Unknown"),
@@ -260,6 +269,7 @@ def run(args) -> str:
         "revision": metadata.get("revision", "main"),
         "status": "FINISHED",
         "submitted_time": submitted_time,
+        "submitter": submitter,
         **{k: v for k, v in metadata.items() if k not in ("hf_repo", "revision")},
     }
     with open(os.path.join(stage_dir, "results.json"), "w") as f:
@@ -324,6 +334,8 @@ def _load_submission_dir(args):
     if not args.wrapper and os.path.isfile(cand) and "EXAMPLE" not in os.path.basename(os.path.dirname(cand)):
         args.wrapper = cand
     meta = dict(sub.get("metadata", {}))
+    if sub.get("submitter"):
+        meta["submitter"] = sub["submitter"]
     if sub.get("hf_model_url"):
         meta.setdefault("hf_repo", sub["hf_model_url"])
     os.makedirs(config.PENDING_DIR, exist_ok=True)

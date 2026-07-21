@@ -85,12 +85,18 @@ def parse_issue_body(body: str) -> dict:
 
 
 def materialize_submission(fields: dict) -> str | None:
-    """Write submissions/<model_name>/{submission.json, model.py}. Returns the folder."""
+    """Write submissions/<submitter>__<model_name>/{submission.json, model.py}. Returns the folder.
+
+    Namespacing by submitter means two people who pick the same model name never overwrite
+    each other's folder (and, downstream, never merge into one leaderboard row)."""
     name = fields.get("model_name")
     if not name:
         return None
-    safe = re.sub(r"[^A-Za-z0-9._-]", "_", name)
-    folder = os.path.join(REPO_ROOT, "submissions", safe)
+    submitter = fields.get("submitter", "") or ""
+    safe_name = re.sub(r"[^A-Za-z0-9._-]", "_", name)
+    safe_sub = re.sub(r"[^A-Za-z0-9._-]", "_", submitter)
+    folder_name = f"{safe_sub}__{safe_name}" if safe_sub else safe_name
+    folder = os.path.join(REPO_ROOT, "submissions", folder_name)
     os.makedirs(folder, exist_ok=True)
     metadata = {k: fields[k] for k in (
         "model_type", "vision_encoder", "language_model", "training_data",
@@ -99,6 +105,7 @@ def materialize_submission(fields: dict) -> str | None:
         metadata["hf_repo"] = fields["hf_model_url"]
     sub = {
         "model_name": name,
+        "submitter": submitter,
         "checkpoint": fields.get("checkpoint", ""),
         "registered_model": fields.get("registered_model", ""),
         "conv_template": fields.get("conv_template") or "baby_v1",
@@ -145,6 +152,7 @@ def check_once(token: str) -> int:
         if num in seen or "pull_request" in issue:
             continue
         fields = parse_issue_body(issue.get("body", ""))
+        fields["submitter"] = issue.get("user", {}).get("login", "") or ""
         folder = materialize_submission(fields)
         name = fields.get("model_name") or issue.get("title", f"issue-{num}")
         rel = os.path.relpath(folder, REPO_ROOT) if folder else "submissions/<name>"

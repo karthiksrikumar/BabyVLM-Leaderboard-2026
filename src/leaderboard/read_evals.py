@@ -27,6 +27,7 @@ class EvalResult:
     model: str
     revision: str
     results: dict  # {"benchmark::metric": score_in_[0,100] or np.nan}
+    submitter: str = ""  # who submitted (GitHub login / HF user) — part of the row identity
     main_contributions: str = None
     model_type: str = None
     vision_encoder: str = None
@@ -71,7 +72,11 @@ class EvalResult:
         if num_images_data is not None:
             num_images_data = round(num_images_data / 1e6, 3)
 
-        eval_name = f"{model}_{track}"
+        # Row identity = (submitter, model_name, track). Same submitter + same name = update
+        # (intended resubmit-merge); different submitters with the same model name = distinct rows,
+        # so Bob can't clobber Jeff by reusing a name.
+        submitter = config.get("submitter", "") or ""
+        eval_name = f"{submitter}__{model}_{track}" if submitter else f"{model}_{track}"
 
         # Parse the per-benchmark scores. Submission `results` is {benchmark: {metric: score}}
         # with scores in [0, 1]; store them ×100 keyed by "benchmark::metric".
@@ -95,6 +100,7 @@ class EvalResult:
             model=model,
             revision=config.get("model_sha", ""),
             results=results,
+            submitter=submitter,
             main_contributions=config.get("main_contributions", None),
             model_type=config.get("model_type", None),
             vision_encoder=config.get("vision_encoder", None),

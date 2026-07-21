@@ -29,10 +29,28 @@ export HF_TOKEN=hf_xxx                          # write access to the karthiksri
 The held-out test sets are wired up in `config.py` (`DATA_MAP`). On BU's SCC they resolve
 automatically; elsewhere set `BABYVLM_DATA_ROOT` / `BABYVLM_PV_ROOT`.
 
+## Getting notified when a submission arrives
+
+Submissions come in as GitHub issues (from the leaderboard form or the issue form). Run the
+watcher on the SCC so each new submission emails the organizers **with the exact command to
+run it** on the L40S:
+
+```bash
+python -m runner.watch_github            # check once
+python -m runner.watch_github --loop 600 # poll every 10 minutes
+```
+
+For each new GitHub submission it parses the issue, writes `submissions/<name>/`
+(`submission.json` + `model.py`), and emails everyone a **"SUBMISSION RECEIVED (via GitHub)"**
+message containing `qsub runner/submit_l40s.qsub --submission submissions/<name>`. You run that
+line from the email to start the evaluation. Seen issues are tracked in
+`<PENDING_DIR>/.github_seen.json` so each emails once.
+
 ## Evaluating a submission
 
-A submission (from the Space's Submit tab) is a PENDING request in the queue dataset giving
-a model name, a repo/checkpoint pointer, the wrapper name, and metadata. To evaluate it:
+A submission is a `submissions/<name>/` folder (from `watch_github`, or a PR). To evaluate it
+on the L40S, either `qsub runner/submit_l40s.qsub --submission submissions/<name>`, or run the
+runner directly:
 
 ```bash
 # from the leaderboard repo root

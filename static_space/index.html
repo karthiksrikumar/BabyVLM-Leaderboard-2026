@@ -67,6 +67,9 @@
     padding: 11px 26px; font-size: .95rem; font-weight: 600; cursor: pointer; }
   .submit-btn:hover { filter: brightness(1.08); }
   .hint { color: var(--muted); font-size: .8rem; margin: 2px 0 0; }
+  .req { color: #e11d48; font-weight: 700; margin-left: 3px; }
+  @media (prefers-color-scheme: dark) { .req { color: #fb7185; } }
+  .form input:invalid { border-color: #e11d48; }
 </style>
 </head>
 <body>
@@ -102,8 +105,8 @@
       <strong>L40S GPU</strong> and, once approved, your row appears above.</p>
 
     <div class="form">
-      <label>⚠️ Model name (unique)<input id="f_name" placeholder="babyllava-vit-tinyllama" /></label>
-      <label>⚠️ Checkpoint (HuggingFace repo id, or a public download URL)<input id="f_ckpt" placeholder="your-hf-user/your-checkpoint" /></label>
+      <label>Model name (unique)<span class="req">*</span><input id="f_name" placeholder="babyllava-vit-tinyllama" /></label>
+      <label>Checkpoint (HuggingFace repo id, or a public download URL)<span class="req">*</span><input id="f_ckpt" placeholder="your-hf-user/your-checkpoint" /></label>
       <label>🔹 Registered wrapper name (the <code>@register_model</code> name in your model.py)<input id="f_reg" placeholder="babyllava" /></label>
       <label>🔹 Conversation template<input id="f_conv" value="baby_v1" /></label>
       <label>🔹 <strong>(Optional)</strong> Link your HuggingFace model<input id="f_hf" placeholder="https://huggingface.co/your-user/your-model" /></label>
@@ -112,9 +115,9 @@
       <label>👶 Training data<input id="f_data" placeholder="SAYCam" /></label>
       <label>👶 Total number of parameters<input id="f_params" placeholder="1100000000" /></label>
       <label>👶 Brief description<textarea id="f_desc" rows="3" placeholder="A developmentally grounded VLM ..."></textarea></label>
-      <label>⚠️ Your <code>model.py</code> wrapper (paste it, or leave a link)<textarea id="f_modelpy" rows="6" placeholder="Paste your lmms-eval wrapper here (subclass of lmms_eval.api.model.lmms, @register_model). Long files can be pasted into the GitHub issue that opens."></textarea></label>
+      <label>Your <code>model.py</code> wrapper (paste it, or leave a link)<span class="req">*</span><textarea id="f_modelpy" rows="6" placeholder="Paste your lmms-eval wrapper here (subclass of lmms_eval.api.model.lmms, @register_model). Long files can be pasted into the GitHub issue that opens."></textarea></label>
       <button id="submitBtn" class="submit-btn">Submit on GitHub →</button>
-      <p class="hint">⚠️ = required · 👶 = required for the challenge · 🔹 = optional. Submitting opens a
+      <p class="hint"><span class="req">*</span> = required · 👶 = required for the challenge · 🔹 = optional. Submitting opens a
         pre-filled GitHub issue for you to review and post. See the
         <a href="https://github.com/karthiksrikumar/BabyVLM-Leaderboard-2026/blob/main/submissions/README.md" target="_blank">submission guide</a>
         for the PR alternative and the reference <code>model.py</code>.</p>
